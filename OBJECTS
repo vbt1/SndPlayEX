@@ -1,0 +1,11 @@
+# source_program
+SRCS = SoundPlayer.c RB_playPCM.c RB_playCDDA.c RB_playVGM.c RB_menu3D.c POLYDATA.c #3D.c
+
+# $(CMNDIR)/cinit.o
+SYSOBJS = $(SGLLDR)/sglarea.o $(CMNDIR)/cinit.o
+
+SRCS2 = $(SRCS:.c=.o)
+OBJS = $(SRCS2:.cpp=.o) 
+# include the sega game libraries
+LIBS = RB/LIB/fnmatch.o RB/LIB/libRB.a RB/LIB/libgfs.a RB/LIB/cdcrep.a RB/LIB/libsgl3.a RB/LIB/libpcm.a RB/LIB/libadp.a RB/LIB/libsnd.a -lm
+
