@@ -40,7 +40,7 @@
 
 #include <SGL.H>
 #include <sega_pcm.h>
-#include "sddrvs.dat"
+//#include "sddrvs.dat"
 #include <RB_TXT_SCROLL.h>
 #include "RB_playPCM.h"
 #include "RB_playCDDA.h"
@@ -75,18 +75,24 @@ unsigned char debug_menu=0;
 
 #define	SDDRV_NAME	"SDDRVS.TSK"
 #define	SDDRV_SIZE	26610 //0x7000
-#define	SDDRV_ADDR	0x6080000
+#define	SDDRV_ADDR	0x00202000//0x6080000
 
 /*------------------------------------------------------------------------*/
 
 void init_sound(){
     char sound_map[] = {0xff , 0xff} ;
+
+unsigned char *sddrvstsk;
+		sddrvstsk = (unsigned char *)SDDRV_ADDR;
+		GFS_Load(GFS_NameToId((Sint8*)SDDRV_NAME),0,(void *) sddrvstsk,SDDRV_SIZE);
+		slInitSound(sddrvstsk , SDDRV_SIZE , (Uint8 *)sound_map , sizeof(sound_map)) ;
+		sddrvstsk = NULL;	
 	
 //	GFS_Load(GFS_NameToId(SDDRV_NAME),0,(void *)SDDRV_ADDR,SDDRV_SIZE);
 //	SND_INI_PRG_ADR(snd_init) = (Uint16 *)SDDRV_ADDR;
 //	SND_INI_PRG_SZ(snd_init)  = (Uint16)  SDDRV_SIZE;	
 //    slInitSound(sddrvstsk , sizeof(sddrvstsk) , (Uint8 *)sound_map , sizeof(sound_map)) ;
-    slInitSound(SDDRV_ADDR , SDDRV_SIZE , (Uint8 *)sound_map , sizeof(sound_map)) ;
+//    slInitSound(SDDRV_ADDR , SDDRV_SIZE , (Uint8 *)sound_map , sizeof(sound_map)) ;
 }
 // derived from SMPPCM4.C
 static void sndInit(void)
@@ -95,10 +101,10 @@ static void sndInit(void)
     char sound_map[] = {0xff , 0xff} ;
 
 //	GFS_Load(GFS_NameToId(SDDRV_NAME),0,(void *)SDDRV_ADDR,SDDRV_SIZE);
-//	SND_INI_PRG_ADR(snd_init) = (Uint16 *)SDDRV_ADDR;
-//	SND_INI_PRG_SZ(snd_init)  = (Uint16)  SDDRV_SIZE;	
-	SND_INI_PRG_ADR(snd_init) 	= (Uint16 *)sddrvstsk;
-	SND_INI_PRG_SZ(snd_init) 	= (Uint16 )sizeof(sddrvstsk);
+	SND_INI_PRG_ADR(snd_init) = (Uint16 *)SDDRV_ADDR;
+	SND_INI_PRG_SZ(snd_init)  = (Uint16)  SDDRV_SIZE;	
+//	SND_INI_PRG_ADR(snd_init) 	= (Uint16 *)sddrvstsk;
+//	SND_INI_PRG_SZ(snd_init) 	= (Uint16 )sizeof(sddrvstsk);
 	SND_INI_ARA_ADR(snd_init) 	= (Uint16 *)sound_map;
 	SND_INI_ARA_SZ(snd_init) 	= (Uint16)sizeof(sound_map);
 	SND_Init(&snd_init);
@@ -152,10 +158,10 @@ void init_player()
     TXTSCR_initScreen(&screen, TXT_SCROLL_XRES, TXT_SCROLL_YRES);
     TXTSCR_initScroll(&scroll, screen, TXT_SCROLL_XRES, TXT_SCROLL_YRES, 0, 0);
     // init PCM player
-    PLAYPCM_MENU_init(&pcm_menu, scroll, "to CDDA player", VBLANKS);
+    PLAYPCM_MENU_init(&pcm_menu, scroll, "to VGM player", VBLANKS);
     TXTMEN_setCallafter(pcm_menu, SOUNDPLAYER_CALLBACK_PCM, pcm_menu, SOUNDPLAYER_callback);
     // init VGM player
-    PLAYVGM_MENU_init(&vgm_menu, scroll, "to VGM player");
+    PLAYVGM_MENU_init(&vgm_menu, scroll, "to CDDA player");
     TXTMEN_setCallafter(vgm_menu, SOUNDPLAYER_CALLBACK_VGM, vgm_menu, SOUNDPLAYER_callback);
     // init CDDA player
     PLAYCDDA_MENU_init(&cdda_menu, scroll, (debug_menu == 0 ? "to PCM player" : "to 3D menu"));
@@ -227,7 +233,8 @@ void ss_main(void)
 //    struct mallinfo mi;
 //    mi = mallinfo();
 //    were_here("after: allocated %i bytes!", mi.arena);
-    
+   
+	
     while(1) {
         TXTMEN_execute(pcm_menu);
 		TXTMEN_execute(vgm_menu);

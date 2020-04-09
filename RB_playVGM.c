@@ -47,6 +47,49 @@
 #include <RB_PCM.h>
 #include <RB_were_here.h>
 
+#define SOUND_BUFFER_SIZE   (0x40000) // + 0x4d000)
+
+//static char sound[SOUND_BUFFER_SIZE];
+static char *sound=NULL;
+static unsigned int sound_size;
+static PCM sound_dat = {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0};
+
+/********************************************************************************/
+/* sound slot/buffer structures *************************************************/
+/********************************************************************************/
+typedef struct SOUND_SLOT_INFO {
+    struct {
+        unsigned int size;
+        void *address;      // differs for converted wave files
+        PCM dat;
+    } sound;
+    struct {
+        void *address;
+        unsigned int size;
+        // in case of file playback
+        Sint32 fid;
+    } buffer;
+    unsigned char playing;
+    unsigned char repeat;
+    // for sound length counting
+    // because length varies with playing parameters
+    Uint32 frame;
+} SndSlotInfo;
+enum {
+    PLAYVGM_SLOT_HIGHMEM,
+    PLAYVGM_SLOT_LOWMEM,
+    PLAYVGM_SLOT_FILE,
+    PLAYVGM_SLOT_NUM
+};
+static SndSlotInfo sndSlots[] = {
+    // high work RAM
+    { {0, (void *)0, {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0} }, {(void *)NULL, SOUND_BUFFER_SIZE, -1}, 0 },
+    // low work RAM, 1MByte
+    { {0, (void *)0, {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0} }, {(void *)0x200000, 0x100000, -1}, 0 },
+    // CD-ROM file slot
+    { {0, (void *)0, {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0} }, {(void *)0, 0, -1}, 0 }
+};
+
 
 extern PDATA PD_Cube;
 
@@ -61,9 +104,20 @@ static FIXED pos[XYZ];
 static FIXED sca[XYZ];
 static FIXED light[XYZ];
 
-//static void *my_scroll;
+/********************************************************************************/
+/* other variables **************************************************************/
+/********************************************************************************/
+static FIO_out out;
 
+static void *my_scroll;
+static unsigned char my_vblanks;
 
+// draw modes for TXTSCR_printf()
+typedef enum TXT_DRAW {
+    TXT_DRAW_NOW,					// draw string directly to screen
+    TXT_DRAW_LATER,					// draw only to txtscr
+    TXT_DRAW_BOTH
+} TxtDrawMode;
 
 // uses last CdcStat stat
 int PLAYVGM_checkContinue()
@@ -81,7 +135,7 @@ int PLAYVGM_checkContinue()
     }
     return 0;
 }
-
+/*
 void PLAYVGM_updateTracks(void *ptr)
 {
     // check bounds
@@ -94,180 +148,341 @@ void PLAYVGM_updateTracks(void *ptr)
         TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_TRACK, (toc[100] & 0x00FF0000) >> 16);
         TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_TRACK);
     }
-}
+}*/
 
 void PLAYVGM_MENU_callback(int item, void *ptr)
 {
+	unsigned char slot;
+	
     if(ptr == NULL)
         return;
     
-    switch(item) {
-        case PLAYVGM_MENU_TRACK:
-            PLAYVGM_updateTracks(ptr);
-            PLAYVGM_MENU_callback(PLAYVGM_MENU_PLAY, ptr);  
-//            // set laser position
-//            CDC_POS_PTYPE(&poswk) = CDC_PTYPE_TNO;
-//            CDC_POS_TNO(&poswk) = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_TRACK);
-//            CDC_POS_IDX(&poswk) = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_SIDX);
-//            CDC_CdSeek(&poswk);
-//
-            return;
+    slot = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_SLOT);
+    switch(item) { 
+        case PLAYVGM_MENU_LOADCD:
+            {
+                // configure MINCD_load
+                // decreasing priority
+                FIO_ftype ftypes[] = {
+                    // files that fit into high work RAM
+                    {"*.vgm", {0, sndSlots[PLAYVGM_SLOT_HIGHMEM].buffer.size}, "Video Game Music file", FIO_OP_LOAD},
+                    {"*.mdx", {0, sndSlots[PLAYVGM_SLOT_HIGHMEM].buffer.size}, "Sharp X68000 Music file", FIO_OP_LOAD},
+                    {"*.mod", {0, sndSlots[PLAYVGM_SLOT_HIGHMEM].buffer.size}, "MOD Music file", FIO_OP_LOAD},
+                };
+                // now here we use the selected sound slot size
+                FIO_in in = {ftypes, sizeof(ftypes)/sizeof(FIO_ftype), sndSlots[slot].buffer.address, sndSlots[slot].buffer.size};
+                ReturnValue ret;
+                
+                // don't access CD while file playback in process
+                // or the sound will loop strange
+                if(sndSlots[PLAYVGM_SLOT_FILE].playing == 1)
+                    return;
+                // start CD browser
+                TXTSCR_clear(my_scroll, TXT_DRAW_BOTH);
+                
+				MINCD_init();
+				ret = MINCD_load("Select a sound:", &in, &out);
+                if(ret == RETURN_OK) {
+                    // file data is in memory
+#if 1
+                    if(out.otype == FIO_LOADED) {
+#else   // no wave support untill one buffer conversion is finished
+                    if((out.otype == FIO_LOADED) && (out.fti != 0) && (out.fti != 4)) {
+#endif
+                        // save the size
+                        sndSlots[slot].sound.size = out.value.size;
+                            // take care of wave header
+                        sndSlots[slot].sound.address = sndSlots[slot].buffer.address;
+                        // convert WAV on the fly                    
+                        /*if((out.fti == 0) || (out.fti == 4)) {
+                            // it's a wave file
+                            // convert it without using a second buffer
+                            if(VGM_toPCM(sndSlots[slot].buffer.address, sndSlots[slot].buffer.address, &(sndSlots[slot].sound.size), &(sndSlots[slot].sound.dat.pitch), &stereo, &bits, 1) == RETURN_OK) {
+                                sndSlots[slot].sound.address += 44;
+                                // update menu
+                                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_SAMPLERATE, VGM_computeSampleRate(sound_dat.pitch));
+                                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_OCT, VGM_toSXT4(VGM_toOCT(sound_dat.pitch)));
+                                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_FNS, VGM_toFNS(sound_dat.pitch));
+                                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_CHANNELS, stereo);
+                                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_RESOLUTION, (bits == 8 ? 0 : 1));
+                                // update sound_dat
+                                sndSlots[slot].sound.dat.mode = (stereo == 0 ? _Mono : _Stereo);
+                                sndSlots[slot].sound.dat.mode |= (bits == 8 ? _PCM8Bit : _PCM16Bit);
+                                // already adjusted: sound_dat.pitch
+                            }
+                        }*/       
+                        // immediately start playing
+                        PLAYVGM_MENU_callback(PLAYVGM_MENU_PLAY, ptr);
+                    } else if(out.otype == FIO_GOT_FID) {
+                        // only take over file id
+                        // if the file slot is selected
+                      /*  if(slot == PLAYVGM_SLOT_FILE) {
+                            sndSlots[slot].buffer.fid = out.value.fid;
+                            // immediately start playing
+                            PLAYVGM_MENU_callback(PLAYVGM_MENU_PLAY, ptr);
+                        }    */
+                    }
+                }        
+                // continue menu
+               TXTSCR_clear(my_scroll, TXT_DRAW_BOTH);
+               TXTMEN_redrawMenu(ptr);
+                // wait release
+                while(((Smpc_Peripheral[0].data & PER_DGT_ST) == 0) || ((Smpc_Peripheral[0].data & PER_DGT_TA) == 0) || ((Smpc_Peripheral[0].data & PER_DGT_TC) == 0))
+                    slSynch();
+                return;
+            }    
 
-        case PLAYVGM_MENU_RESCAN:
-            // not neccessary, when
-            // Saturn recognizes the CD Open status
-#if 0
-//            were_here("CD rescan #1");
-//            CdUnlock();
-#else
-//            were_here("CD rescan #2");
-            // should at least enable a CD change
-            // without opening the tray manually
-            // but it may not unlock the CD for data access
-            // because when you insert a new CD with manually opened tray
-            // it's locked and data cannot be accessed
-            // !!! sets drive to BUSY status, untill opened manually
-            // -> maybe one is enough
-            CDC_CdOpen();   // open
-//if((Smpc_Peripheral[0].data & PER_DGT_TZ) == 0) {
-//            CDC_CdOpen();   // close
-//            CDC_TgetToc(toc);
-//}
-#endif            
-            // the rest is done in callafter,
-            // signaled by HIRQ_DCHG
-            return;
-
-        case PLAYVGM_MENU_VOLUME:
-            slSndVolume(TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_VOLUME));
-            return;
-            
-        case PLAYVGM_MENU_PLAY:
-            CDC_GetCurStat(&stat);
-            if(((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_PLAY) || ((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_STANDBY) || ((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_SEEK)) {
-                // start playing track
-                 /* set data */
-                 CDC_PLY_STYPE(&plywk) = CDC_PTYPE_TNO;
-                 CDC_PLY_STNO(&plywk)  = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_TRACK);
-                 CDC_PLY_SIDX(&plywk) = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_SIDX);
-                 CDC_PLY_ETYPE(&plywk) = CDC_PTYPE_TNO;
-                    // this should play all tracks up to the last one
-                    // if you just want one track, input same track as for CDC_PLY_STNO(&plywk):
-                    // TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_TRACK);                 
-                 CDC_PLY_ETNO(&plywk)  = (toc[100] & 0x00FF0000) >> 16;
-                 CDC_PLY_EIDX(&plywk) = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_EIDX);
-                // this needs to be investigated:
-                 CDC_PLY_PMODE(&plywk) = CDC_PM_DFL + TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_REPEATS);
-                 /* start playing */
-                 CDC_CdPlay(&plywk);
-            } else PLAYVGM_checkContinue(); 
-
-            return;
-            
-        case PLAYVGM_MENU_PAUSE:
-//          4. Pause CD Play (No changed selection: seek current position) ......Pause               
-            CDC_GetCurStat(&stat);
-            if(((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_PLAY) || ((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_SCAN)) {
-                CDC_POS_PTYPE(&poswk) = CDC_PTYPE_NOCHG;
+        case PLAYVGM_MENU_STOPCD:
+            {
+                CdcPos poswk;
+                // seek home position
+                CDC_POS_PTYPE(&poswk) = CDC_PTYPE_DFL;
                 CDC_CdSeek(&poswk);
-            } else PLAYVGM_checkContinue();
+            }
             return;
 
-        case PLAYVGM_MENU_STOP:
-            // seek home position
-            CDC_POS_PTYPE(&poswk) = CDC_PTYPE_DFL;
-            CDC_CdSeek(&poswk);
-                // although it's not neccessary
-//            slCDDAOff();
+        case PLAYVGM_MENU_PLAY:
+            /*switch(slot) {
+                case PLAYVGM_SLOT_HIGHMEM:
+                case PLAYVGM_SLOT_LOWMEM:
+                    // can play the same sound
+                    // multiple times simultaneously
+                    if(sndSlots[slot].sound.size > 0) {
+                        slPCMOn(&(sndSlots[slot].sound.dat), sndSlots[slot].sound.address, sndSlots[slot].sound.size);
+                        sndSlots[slot].playing = 1;
+                        sndSlots[slot].frame = 0;
+                    }    
+                    break;
+
+                case PLAYVGM_SLOT_FILE:
+                    if(sndSlots[slot].playing == 0) {
+                        PLAYVGM_MENU_playFile(slot, ptr);
+                        sndSlots[slot].playing = 1;
+                        sndSlots[slot].frame = 0;
+                    }    
+                    break;
+            }*/
             return;
             
-        case PLAYVGM_MENU_FWD:
-            // start CD scan / fast forward
-            // or continue playing
-            CDC_GetCurStat(&stat);
-            if((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_PLAY) {
-                CDC_CdScan(CDC_SCAN_FWD);
-            } else PLAYVGM_checkContinue(); 
+        case PLAYVGM_MENU_STOP:
+/*            // stop deletes repeat
+            if((sndSlots[slot].playing == 1) && (sndSlots[slot].repeat == 1)) {
+                sndSlots[slot].repeat = 0;
+                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_REPEAT, sndSlots[slot].repeat);
+                TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_REPEAT);
+            }
+            // stop sound    
+            switch(slot) {
+                case PLAYVGM_SLOT_HIGHMEM:
+                case PLAYVGM_SLOT_LOWMEM:
+                    slPCMOff(&(sndSlots[slot].sound.dat));
+                    sndSlots[slot].playing = 0;
+                    break;
+
+                case PLAYVGM_SLOT_FILE:
+                    // don't know exactly if the check is neccessary,
+                    // but the pcmhn is only valid after being created for playing
+                    // so I guess it is
+                    if(sndSlots[slot].playing == 1) {
+                        VGM_Stop(pcmhn);
+            			VGM_DestroyGfsHandle(pcmhn);
+            			GFS_Close(gfshn);
+                        sndSlots[slot].playing = 0;
+                    }    
+                    break;
+            }
+*/            
+            return;
+            
+        case PLAYVGM_MENU_REPEAT:
+            sndSlots[slot].repeat = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_REPEAT);
             return;
 
-        case PLAYVGM_MENU_RVS:
-            // start CD scan / fast rewind/reverse
-            // or continue playing
-            CDC_GetCurStat(&stat);
-            if((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_PLAY) {
-                CDC_CdScan(CDC_SCAN_RVS);
-            } else PLAYVGM_checkContinue(); 
+        case PLAYVGM_MENU_SLOT:
+/*            // update sound attributes in menu
+                // repeat
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_REPEAT, sndSlots[slot].repeat);
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_REPEAT);
+                // channels
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_CHANNELS, ((sndSlots[slot].sound.dat.mode & _Stereo) != 0 ? 1 : 0));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_CHANNELS);
+                // bit resolution
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_RESOLUTION, ((sndSlots[slot].sound.dat.mode & _PCM8Bit) != 0 ? 0 : 1));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_RESOLUTION);
+                // samplerate
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_SAMPLERATE, VGM_computeSampleRate(sndSlots[slot].sound.dat.pitch));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_SAMPLERATE);
+                // OCT
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_OCT, VGM_toSXT4(VGM_toOCT(sndSlots[slot].sound.dat.pitch)));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_OCT);
+                // FNS
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_FNS, VGM_toFNS(sndSlots[slot].sound.dat.pitch));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_FNS);
+                // level
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_LEVEL, sndSlots[slot].sound.dat.level);
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_LEVEL);
+                // pan
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_PAN, sndSlots[slot].sound.dat.pan);
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_PAN);
+                // length
+            // in callafter
+//            TXTMEN_setFloatValueAt(ptr, PLAYVGM_MENU_LENGTH, ((float)(sndSlots[slot].frame * my_vblanks) / 60.0));
+//            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_LENGTH);
+*/                
+            return;
+/*
+        case PLAYVGM_MENU_CHANNELS:
+        case PLAYVGM_MENU_RESOLUTION:
+            sndSlots[slot].sound.dat.mode = (TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_CHANNELS) == 1 ? _Stereo : _Mono);
+            sndSlots[slot].sound.dat.mode |= (TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_RESOLUTION) == 1 ? _PCM16Bit : _PCM8Bit);
+            return;
+            
+        case PLAYVGM_MENU_SAMPLERATE:
+            sndSlots[slot].sound.dat.pitch = VGM_computePitch(TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_SAMPLERATE));
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_OCT, VGM_toSXT4(VGM_toOCT(sndSlots[slot].sound.dat.pitch)));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_OCT);
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_FNS, VGM_toFNS(sndSlots[slot].sound.dat.pitch));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_FNS);
+            return;
+            
+        case PLAYVGM_MENU_OCT:
+        case PLAYVGM_MENU_FNS:
+            sndSlots[slot].sound.dat.pitch = VGM_toPitch(TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_OCT), TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_FNS));
+            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_SAMPLERATE, VGM_computeSampleRate(sndSlots[slot].sound.dat.pitch));
+            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_SAMPLERATE);
+            return;
+            
+        case PLAYVGM_MENU_LEVEL:
+            if((slot == PLAYVGM_SLOT_HIGHMEM) || (slot == PLAYVGM_SLOT_LOWMEM)) {
+                sndSlots[slot].sound.dat.level = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_LEVEL);
+                // this somehow (stops or )mutes the sound
+                // untill next repeat
+                if(sndSlots[slot].playing == 1)
+                    slPCMParmChange(&(sndSlots[slot].sound.dat));
+            } else if(slot == PLAYVGM_SLOT_FILE) {
+                // level value range differs
+                VGM_SetVolume(pcmhn, TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_LEVEL) >> 4);
+                if(sndSlots[slot].playing == 1)
+                    VGM_ChangePcmPara(pcmhn);
+            }
             return;
 
-        case PLAYVGM_MENU_REPEATS:
-            return;
-        
-        case PLAYVGM_MENU_SIDX:
-            if(TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_SIDX) > TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_EIDX)) {
-                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_SIDX, TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_EIDX));
-                TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_SIDX);
-            }    
+        case PLAYVGM_MENU_PAN:
+            if((slot == PLAYVGM_SLOT_HIGHMEM) || (slot == PLAYVGM_SLOT_LOWMEM)) {
+                sndSlots[slot].sound.dat.pan = TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_PAN);
+                // this somehow (stops or )mutes the sound
+                // untill next repeat
+                if(sndSlots[slot].playing == 1)
+                    slPCMParmChange(&(sndSlots[slot].sound.dat));
+            } else if(slot == PLAYVGM_SLOT_FILE) {
+                // pan only valid for mono
+                // ignored for stereo
+                // pan value range differs
+                VGM_SetPan(pcmhn, (128 + TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_PAN)) >> 3);
+                if(sndSlots[slot].playing == 1)
+                    VGM_ChangePcmPara(pcmhn);
+            }
             return;
 
-        case PLAYVGM_MENU_EIDX:
-            if(TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_EIDX) < TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_SIDX)) {
-                TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_EIDX, TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_SIDX));
-                TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_EIDX);
-            }    
+        case PLAYVGM_MENU_LENGTH:
             return;
-
-        case PLAYVGM_MENU_LLEVEL:
-        case PLAYVGM_MENU_RLEVEL:
-        case PLAYVGM_MENU_LPAN:
-        case PLAYVGM_MENU_RPAN:
-            slCDDAOn(TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_LLEVEL), TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_RLEVEL), TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_LPAN), TXTMEN_getIntValueAt(ptr, PLAYVGM_MENU_RPAN));
-            return;
+*/        
 
         case PLAYVGM_MENU_EXIT:
             TXTMEN_leave(ptr);
             return;
 
         case PLAYVGM_MENU_AFTER:
-            if((Smpc_Peripheral[0].data & PER_DGT_TX) == 0)
-                CDC_ClrHirqReq(~CDC_HIRQ_DCHG);
-
-
-            // check if to rescan cd
-            // don't care if a CD is inserted
+        {
+            int i;
+            int status;
+            
+            // first, check if the CD has been changed
+            // if that would be done only in MINCD and CDDA player,
+            // no datatrack would be recognized when changing to CDDA player,
+            // because it clears the IRQ
+// ??? does it even work
+// doesn't seem to
+// like in MINCD, have to manually rescan CD
             if((CDC_GetHirqReq() & CDC_HIRQ_DCHG) != 0) {
-//                slPrint("Got IRQ DCHG!", slLocate(5, 25));
+// have to check if this works,
+// it freezes the Saturn for 20 seconds
+//                if((Smpc_Peripheral[0].data & PER_DGT_TX) == 0) {
+//                    CDC_CdOpen();
+//                    CDC_CdOpen();
+//                }    
+                // after every CD change, the data track cannot be accessed
+                // but CDDA instead can
+ //               CdUnlock();
+                MINCD_init();
+            }
+/*
+            // need to call VGM_Task often...
+                // file slot
+            if(sndSlots[PLAYVGM_SLOT_FILE].playing == 1) {
+                VGM_Task(pcmhn);
+            }
 
-                // experiments showed that
-                // seeking home position makes the TOC read correctly
-                // (play and pause could have the same effect,
-                // untested because of BUSY state)
-                PLAYVGM_MENU_callback(PLAYVGM_MENU_STOP, ptr);
-                // need to wait to get a valid TOC
-                do {
-                    CDC_GetCurStat(&stat);
-                } while((CDC_STAT_STATUS(&stat) & 0xF) == CDC_ST_BUSY);
-                // this one waits in the open and nodisc status
-                CDC_TgetToc(toc);
-                CDC_ClrHirqReq(~CDC_HIRQ_DCHG);
+            // pcm playing status..
+            for(i = 0; i < PLAYVGM_SLOT_NUM; i++) {
+                // count playlength
+                if(sndSlots[i].playing == 1) {
+                    // we may want to play a memory and a file slot
+                    // simultaneously
+                    
+                    // memory slots
+                    if((i == PLAYVGM_SLOT_HIGHMEM) || (i == PLAYVGM_SLOT_LOWMEM)) {
+                        // pcm finished playing?
+                        if(slPCMStat(&(sndSlots[i].sound.dat)) != 1) {
+                            // restart if repeat is selected
+                            if(sndSlots[i].repeat == 1) {
+                                slPCMOn(&(sndSlots[i].sound.dat), sndSlots[i].sound.address, sndSlots[i].sound.size);
+                                sndSlots[i].frame = 0;
+                            } else {
+                                sndSlots[i].playing = 0;
+                                status = VGM_STAT_PLAY_END;
+                            }    
+                        } else {
+                            sndSlots[i].frame++;
+                            status = VGM_STAT_PLAY_TIME;
+                        }    
+                    }    
+                    // file slot
+                    if(i == PLAYVGM_SLOT_FILE) {
+                        VGM_Task(pcmhn);
+                        status = VGM_GetPlayStatus(pcmhn);
+                        // the file slot doesn't start playing immediately
+                        // because of CD access
+                        if(status == VGM_STAT_PLAY_TIME)
+                            sndSlots[i].frame++;
+                		if(status == VGM_STAT_PLAY_END) {
+                		    // must destroy everything
+                			VGM_DestroyGfsHandle(pcmhn);
+                			GFS_Close(gfshn);
+                			// check repeat
+                            if(sndSlots[i].repeat == 1) {
+                                PLAYVGM_MENU_playFile(slot, ptr);
+                                sndSlots[i].frame = 0;
+                                status = VGM_GetPlayStatus(pcmhn);
+                            } else sndSlots[i].playing = 0;    
+                		}
+ //                       if(status == VGM_STAT_PLAY_ERR_STOP)
+ //                           status = VGM_STAT_PLAY_END+2;
+                    }    
+                } else status = VGM_STAT_PLAY_END+1;
                 
-                // maybe there is further stuff we want to
-                // perform in this app
-
-                // updates menu track number
-                PLAYVGM_updateTracks(ptr);
-                // !!! and starts playing immediately
-//                PLAYVGM_MENU_callback(PLAYVGM_MENU_TRACK, ptr);
-            } //else slPrint("No IRQ DCHG!", slLocate(5, 25));
-
-            // update CD status
-            int cdstatus = 0;
-            CDC_GetCurStat(&stat);
-            cdstatus = CDC_STAT_STATUS(&stat) & 0xF;
-            if(!((cdstatus >= 0) && (cdstatus <= CDC_ST_FATAL)))
-                cdstatus = CDC_ST_FATAL + 1;
-            TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_CDSTATUS, cdstatus);
-            TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_CDSTATUS);
-
+                // redraw for activated slot
+                if(i == slot) {
+                    // frame
+                    TXTMEN_setFloatValueAt(ptr, PLAYVGM_MENU_LENGTH, ((float)(sndSlots[i].frame * my_vblanks) / 60.0));
+                    TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_LENGTH);
+                    // status
+                    TXTMEN_setIntValueAt(ptr, PLAYVGM_MENU_STATUS, status);
+                    TXTMEN_redrawValueAt(ptr, PLAYVGM_MENU_STATUS);
+                }    
+            }     
+*/			
+        }    
             return;
     }
 }
@@ -280,8 +495,8 @@ void PLAYVGM_MENU_init(void **menu, void *scroll, unsigned char *exitText)
 
     TXTMEN_addButton(*menu, "load from CD");
     TXTMEN_setCallback(*menu, PLAYVGM_MENU_LOADCD, *menu, PLAYVGM_MENU_callback);
-    TXTMEN_addButton(*menu, "rescan CD");
-    TXTMEN_setCallback(*menu, PLAYVGM_MENU_RESCAN, *menu, PLAYVGM_MENU_callback);
+//    TXTMEN_addButton(*menu, "rescan CD");
+//    TXTMEN_setCallback(*menu, PLAYVGM_MENU_RESCAN, *menu, PLAYVGM_MENU_callback);
     TXTMEN_addButton(*menu, "play");
     TXTMEN_setCallback(*menu, PLAYVGM_MENU_PLAY, *menu, PLAYVGM_MENU_callback);
     TXTMEN_addButton(*menu, "stop");

@@ -46,13 +46,14 @@
 #include <RB_minCD.h>
 #include <RB_PCM.h>
 #include <RB_were_here.h>
-
+//#include <stdlib.h>
 
 // why do I have to reduce the size so much???
 // there seems much space left in SoundPlayer.map
-#define SOUND_BUFFER_SIZE   (0x20000) // + 0x4d000)
+#define SOUND_BUFFER_SIZE   (0x40000) // + 0x4d000)
 
-static char sound[SOUND_BUFFER_SIZE];
+//static char sound[SOUND_BUFFER_SIZE];
+static char *sound=NULL;
 static unsigned int sound_size;
 static PCM sound_dat = {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0};
 
@@ -85,7 +86,7 @@ enum {
 };
 static SndSlotInfo sndSlots[] = {
     // high work RAM
-    { {0, (void *)0, {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0} }, {(void *)sound, SOUND_BUFFER_SIZE, -1}, 0 },
+    { {0, (void *)0, {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0} }, {(void *)NULL, SOUND_BUFFER_SIZE, -1}, 0 },
     // low work RAM, 1MByte
     { {0, (void *)0, {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0} }, {(void *)0x200000, 0x100000, -1}, 0 },
     // CD-ROM file slot
@@ -171,7 +172,7 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
         
     if(ptr == NULL)
         return;
-        
+
     slot = TXTMEN_getIntValueAt(ptr, PLAYPCM_MENU_SLOT);
     switch(item) { 
         case PLAYPCM_MENU_LOADCD:
@@ -206,10 +207,11 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
                 // or the sound will loop strange
                 if(sndSlots[PLAYPCM_SLOT_FILE].playing == 1)
                     return;
-                
                 // start CD browser
                 TXTSCR_clear(my_scroll, TXT_DRAW_BOTH);
-                ret = MINCD_load("Select a sound:", &in, &out);
+                
+				MINCD_init();
+				ret = MINCD_load("Select a sound:", &in, &out);
                 if(ret == RETURN_OK) {
                     // file data is in memory
 #if 1
@@ -252,14 +254,14 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
                     }
                 }        
                 // continue menu
-                TXTSCR_clear(my_scroll, TXT_DRAW_BOTH);
-                TXTMEN_redrawMenu(ptr);
+               TXTSCR_clear(my_scroll, TXT_DRAW_BOTH);
+               TXTMEN_redrawMenu(ptr);
                 // wait release
                 while(((Smpc_Peripheral[0].data & PER_DGT_ST) == 0) || ((Smpc_Peripheral[0].data & PER_DGT_TA) == 0) || ((Smpc_Peripheral[0].data & PER_DGT_TC) == 0))
                     slSynch();
                 return;
             }    
-
+/*
         case PLAYPCM_MENU_RESCAN:
             // needed:
             // if previously a CDDA only CD was inserted,
@@ -275,11 +277,11 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
             // to signal a CD change to Saturn manually
             // after every CD change, the data track cannot be accessed
             // but CDDA instead can
-            CdUnlock();
+//            CdUnlock();
             // erases all sector data in CD buffer
             MINCD_init();
             return;
-
+*/
         case PLAYPCM_MENU_STOPCD:
             {
                 CdcPos poswk;
@@ -461,7 +463,7 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
 //                }    
                 // after every CD change, the data track cannot be accessed
                 // but CDDA instead can
-                CdUnlock();
+ //               CdUnlock();
                 MINCD_init();
             }
 
@@ -546,7 +548,10 @@ void PLAYPCM_MENU_init(void **menu, void *scroll, unsigned char *exitText, unsig
     my_vblanks = vblanks;
 
     sound_size = 0;
-    
+  
+	if ((sound = (Uint8 *)malloc(SOUND_BUFFER_SIZE)) == NULL)
+		return;
+	sndSlots[0].buffer.address = (Uint8 *)&sound[0];
     // init slots
     for(i = 0; i < PLAYPCM_SLOT_NUM; i++) {
         sndSlots[i].repeat = 0;
@@ -558,8 +563,8 @@ void PLAYPCM_MENU_init(void **menu, void *scroll, unsigned char *exitText, unsig
     TXTMEN_init(menu, scroll, "Rockin'-B's PCM Player");
     TXTMEN_addButton(*menu, "load from CD");
     TXTMEN_setCallback(*menu, PLAYPCM_MENU_LOADCD, *menu, PLAYPCM_MENU_callback);
-    TXTMEN_addButton(*menu, "rescan CD");
-    TXTMEN_setCallback(*menu, PLAYPCM_MENU_RESCAN, *menu, PLAYPCM_MENU_callback);
+//    TXTMEN_addButton(*menu, "rescan CD");
+//    TXTMEN_setCallback(*menu, PLAYPCM_MENU_RESCAN, *menu, PLAYPCM_MENU_callback);
     TXTMEN_addButton(*menu, "stop CD");
     TXTMEN_setCallback(*menu, PLAYPCM_MENU_STOPCD, *menu, PLAYPCM_MENU_callback);
     TXTMEN_addButton(*menu, "play");
