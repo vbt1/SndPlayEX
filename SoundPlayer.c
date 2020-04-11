@@ -50,7 +50,6 @@
 // debug
 #include "sega_snd.h"
 
-
 ReturnValue TXTMEN_setCallafter(void *menu, int item, void *ptr, void (*func)(int item, void *ptr));
 Sint32 MINCD_init();
 ReturnValue TXTMEN_execute(void *menu);
@@ -82,8 +81,9 @@ unsigned char debug_menu=0;
 void init_sound(){
     char sound_map[] = {0xff , 0xff} ;
 
-unsigned char *sddrvstsk;
+		unsigned char *sddrvstsk;
 		sddrvstsk = (unsigned char *)SDDRV_ADDR;
+		
 		GFS_Load(GFS_NameToId((Sint8*)SDDRV_NAME),0,(void *) sddrvstsk,SDDRV_SIZE);
 		slInitSound(sddrvstsk , SDDRV_SIZE , (Uint8 *)sound_map , sizeof(sound_map)) ;
 		sddrvstsk = NULL;	
@@ -95,7 +95,7 @@ unsigned char *sddrvstsk;
 //    slInitSound(SDDRV_ADDR , SDDRV_SIZE , (Uint8 *)sound_map , sizeof(sound_map)) ;
 }
 // derived from SMPPCM4.C
-static void sndInit(void)
+void sndInit(void)
 {
 	SndIniDt 	snd_init;
     char sound_map[] = {0xff , 0xff} ;
@@ -202,38 +202,24 @@ void ss_main(void)
     // and copies the table to VRAM with slGouraudTblCopy()
     // For this, a local temporary gouraud table is needed
     // which is big enough to hold the biggest gouraud table in use
-// 	slPrint("slInitGouraud",slLocate(10,9));	
 	slInitGouraud(gourRealMax, GOUR_REAL_MAX, GRaddr, vwork);
     // INT.TXT says
     // Function: 
     // Sets the user-defined function to be executed during V-blank-in interrupt 
     // -> so it can be used for PCM_VblIn
-// 	slPrint("slIntFunction",slLocate(10,9));	
 	slIntFunction(my_vblank);
     // further SBL PCM initializations
     // see my_vblank()
 
-
         // SBL PCM needs it's GFS_init(), too
- //	slPrint("MINCD_init",slLocate(10,9));		
     MINCD_init();
- //	slPrint("init_sound",slLocate(10,9));	
     init_sound();
     // this NEEDS to be done to get the SBL PCM lib to work
     // otherwise the Saturn will freeze on play start
- //	slPrint("sndInit",slLocate(10,9));	
     sndInit();
- //	slPrint("PCM_Init",slLocate(10,9));
 	PCM_Init();
- //	slPrint("PCM_DeclareUseAdpcm",slLocate(10,9));	
 	PCM_DeclareUseAdpcm();
-//  	slPrint("init_player",slLocate(10,9));   
-  //      slSynch();	
     init_player();
-//    struct mallinfo mi;
-//    mi = mallinfo();
-//    were_here("after: allocated %i bytes!", mi.arena);
-   
 	
     while(1) {
         TXTMEN_execute(pcm_menu);

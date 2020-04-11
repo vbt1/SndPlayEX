@@ -48,7 +48,7 @@
 #include <RB_were_here.h>
 
 
-extern PDATA PD_Cube;
+//extern PDATA PD_Cube;
 
 static CdcPly plywk;
 static CdcPos poswk;

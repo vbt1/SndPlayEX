@@ -4,6 +4,7 @@
 #include "textnum.h"
 #include "colornum.h"
 
+#if 0
  static POINT point_cube[] = {
 	POStoFIXED(-80,-80,-80) ,
 	POStoFIXED( 80,-80,-80) ,
@@ -483,3 +484,4 @@
 	attribute_flag1
     } ;
 
+#endif

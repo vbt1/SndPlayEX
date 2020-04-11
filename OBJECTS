@@ -1,5 +1,5 @@
 # source_program
-SRCS = SoundPlayer.c RB_playPCM.c RB_playCDDA.c RB_playVGM.c RB_menu3D.c POLYDATA.c #3D.c
+SRCS = SoundPlayer.c RB_playPCM.c RB_playCDDA.c RB_playVGM.c RB_menu3D.c #3D.c
 
 # $(CMNDIR)/cinit.o
 SYSOBJS = $(SGLLDR)/sglarea.o $(CMNDIR)/cinit.o

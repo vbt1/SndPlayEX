@@ -47,7 +47,7 @@
 
 
 #include "3D/Notes3SSX.mdl"
-extern PDATA PD_Cube;
+//extern PDATA PD_Cube;
 
 #define toFLOAT(fx)         (((float)fx) / 65536.0)
 #define ANGtoDEG(a)         ((((float)a) * 360.0) / 65536.0)
@@ -62,7 +62,7 @@ static FIXED light[XYZ];
 static ANGLE light_ang[XYZ];
 static ANGLE light_angAdd[XYZ];
 
-unsigned char enable_gouraud;
+unsigned char enable_gouraud = 0;
 
 
 void MENU3D_computeLight()

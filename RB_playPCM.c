@@ -50,11 +50,11 @@
 
 // why do I have to reduce the size so much???
 // there seems much space left in SoundPlayer.map
-#define SOUND_BUFFER_SIZE   (0x40000) // + 0x4d000)
+#define SOUND_BUFFER_SIZE   (0x44000) // + 0x4d000)
 
 //static char sound[SOUND_BUFFER_SIZE];
-static char *sound=NULL;
-static unsigned int sound_size;
+char *sound=NULL;
+//static unsigned int sound_size;
 static PCM sound_dat = {(_Mono | _PCM16Bit) , 0 , 127 , 0 , 0x7000 , 0 , 0 , 0 , 0};
 
 /********************************************************************************/
@@ -125,7 +125,7 @@ static FIO_out out;
 
 static void *my_scroll;
 static unsigned char my_vblanks;
-
+static unsigned int drvLoaded=0;
 
 /********************************************************************************/
 /* main PCM player application **************************************************/
@@ -209,8 +209,17 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
                     return;
                 // start CD browser
                 TXTSCR_clear(my_scroll, TXT_DRAW_BOTH);
-                
-				MINCD_init();
+
+				if(drvLoaded==0)
+				{
+//					MINCD_init();
+					init_sound();
+					sndInit();
+					PCM_Init();
+					PCM_DeclareUseAdpcm();
+					drvLoaded = 1;					
+				}
+				
 				ret = MINCD_load("Select a sound:", &in, &out);
                 if(ret == RETURN_OK) {
                     // file data is in memory
@@ -439,6 +448,7 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
         
 
         case PLAYPCM_MENU_EXIT:
+			drvLoaded=0;
             TXTMEN_leave(ptr);
             return;
 
@@ -454,7 +464,8 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
 // ??? does it even work
 // doesn't seem to
 // like in MINCD, have to manually rescan CD
-            if((CDC_GetHirqReq() & CDC_HIRQ_DCHG) != 0) {
+//            if((CDC_GetHirqReq() & CDC_HIRQ_DCHG) != 0) 
+			{
 // have to check if this works,
 // it freezes the Saturn for 20 seconds
 //                if((Smpc_Peripheral[0].data & PER_DGT_TX) == 0) {
@@ -464,7 +475,7 @@ void PLAYPCM_MENU_callback(int item, void *ptr)
                 // after every CD change, the data track cannot be accessed
                 // but CDDA instead can
  //               CdUnlock();
-                MINCD_init();
+               MINCD_init();  // vbt on vire
             }
 
             // need to call PCM_Task often...
@@ -547,7 +558,7 @@ void PLAYPCM_MENU_init(void **menu, void *scroll, unsigned char *exitText, unsig
     my_scroll = scroll;
     my_vblanks = vblanks;
 
-    sound_size = 0;
+//    sound_size = 0;
   
 	if ((sound = (Uint8 *)malloc(SOUND_BUFFER_SIZE)) == NULL)
 		return;
@@ -557,8 +568,6 @@ void PLAYPCM_MENU_init(void **menu, void *scroll, unsigned char *exitText, unsig
         sndSlots[i].repeat = 0;
         sndSlots[i].frame = 0;
     }    
-
-//slPrint((Uint8 *)GFS_IdToName(3),slLocate(10,2));	
 
     TXTMEN_init(menu, scroll, "Rockin'-B's PCM Player");
     TXTMEN_addButton(*menu, "load from CD");
@@ -622,4 +631,3 @@ void PLAYPCM_MENU_init(void **menu, void *scroll, unsigned char *exitText, unsig
         TXTMEN_setCallback(*menu, PLAYPCM_MENU_EXIT, *menu, PLAYPCM_MENU_callback);
     }    
 }
-

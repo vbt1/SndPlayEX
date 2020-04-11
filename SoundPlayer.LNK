@@ -1,0 +1,79 @@
+OUTPUT_FORMAT(coff-sh)
+/* problems:
+ * - can't place libz.a in workRamLow
+ * - how to force some malloc() results being in workRamLow?
+ *
+ */
+MEMORY
+{
+    workRamLow (wxai) : ORIGIN = 0x200000, LENGTH = 1M
+    workRamHigh (wxai) : ORIGIN = 0x6004000, LENGTH = 0xfc000
+}
+
+
+SECTIONS {
+        /* the linker does not place the lib here,
+         * if I place it as first one, strange */
+
+	.entry 0x06004000 : {	
+		*(.entry)	
+		*(SLSTART)	
+	} > workRamHigh				
+	.text ALIGN(0x20) :			
+	{			
+		* (.text)			
+		*(.strings)
+
+		*(.eh_frame_hdr)
+		*(.eh_frame)		
+		__etext = .;			
+	} > workRamHigh				
+	SLPROG ALIGN(0x20): {	
+		__slprog_start = .;	
+		*(SLPROG)	
+		__slprog_end = .;	
+	} > workRamHigh				
+	.tors  ALIGN(0x10) :			
+	{			
+		___ctors = . ;			
+		*(.ctors)			
+		___ctors_end = . ;			
+		___dtors = . ;			
+		*(.dtors)			
+		___dtors_end = . ;			
+	} > workRamHigh				
+	.data ALIGN(0x10):			
+	{			
+		* (.data)			
+		__edata = . ;			
+	} > workRamHigh	
+   .rodata ALIGN(0x20) :            
+    {            
+        *(.rodata)            
+    } > workRamHigh	
+	.bss ALIGN(0x10) (NOLOAD):			
+	{			
+		__bstart = . ;			
+		*(.bss)			
+         * ( COMMON )        		
+		__bend = . ;			
+	_end = .;			
+	} > workRamHigh		
+}				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
