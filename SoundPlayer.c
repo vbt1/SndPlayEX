@@ -157,15 +157,17 @@ void init_player()
     // prepare the TXT scroll stuff
     TXTSCR_initScreen(&screen, TXT_SCROLL_XRES, TXT_SCROLL_YRES);
     TXTSCR_initScroll(&scroll, screen, TXT_SCROLL_XRES, TXT_SCROLL_YRES, 0, 0);
-    // init PCM player
-    PLAYPCM_MENU_init(&pcm_menu, scroll, "to VGM player", VBLANKS);
-    TXTMEN_setCallafter(pcm_menu, SOUNDPLAYER_CALLBACK_PCM, pcm_menu, SOUNDPLAYER_callback);
     // init VGM player
     PLAYVGM_MENU_init(&vgm_menu, scroll, "to CDDA player");
     TXTMEN_setCallafter(vgm_menu, SOUNDPLAYER_CALLBACK_VGM, vgm_menu, SOUNDPLAYER_callback);
+/* 
+ // init PCM player
+    PLAYPCM_MENU_init(&pcm_menu, scroll, "to VGM player", VBLANKS);
+    TXTMEN_setCallafter(pcm_menu, SOUNDPLAYER_CALLBACK_PCM, pcm_menu, SOUNDPLAYER_callback);
     // init CDDA player
     PLAYCDDA_MENU_init(&cdda_menu, scroll, (debug_menu == 0 ? "to PCM player" : "to 3D menu"));
     TXTMEN_setCallafter(cdda_menu, SOUNDPLAYER_CALLBACK_CDDA, cdda_menu, SOUNDPLAYER_callback);
+*/	
     // init 3D menu
         // we always use 3D display, so we always need 3D default values
         // NOTE: before MENU3D_MENU_init()

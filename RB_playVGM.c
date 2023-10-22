@@ -164,9 +164,9 @@ void PLAYVGM_MENU_callback(int item, void *ptr)
                 // configure MINCD_load
                 // decreasing priority
                 FIO_ftype ftypes[] = {
+                    {"*.mod", {0, sndSlots[PLAYVGM_SLOT_HIGHMEM].buffer.size}, "MOD Music file", FIO_OP_LOAD},
                     {"*.vgm", {0, sndSlots[PLAYVGM_SLOT_HIGHMEM].buffer.size}, "Video Game Music file", FIO_OP_LOAD},
                     {"*.mdx", {0, sndSlots[PLAYVGM_SLOT_HIGHMEM].buffer.size}, "Sharp X68000 Music file", FIO_OP_LOAD},
-                    {"*.mod", {0, sndSlots[PLAYVGM_SLOT_HIGHMEM].buffer.size}, "MOD Music file", FIO_OP_LOAD},
                 };
 
                 // now here we use the selected sound slot size
@@ -181,7 +181,7 @@ void PLAYVGM_MENU_callback(int item, void *ptr)
  
 				if(drvLoaded==0)
 				{
-//					MINCD_init(); // vbt ajout 					
+					MINCD_init(); // vbt ajout 					
 					DrvInitDamageXsound(); 
 					Uint32 end = *(Uint32 *)(0x25A00100);
 					*(Uint32 *)(0x25A00104)=end;				
@@ -192,6 +192,25 @@ void PLAYVGM_MENU_callback(int item, void *ptr)
 				
                 FIO_in in = {ftypes, sizeof(ftypes)/sizeof(FIO_ftype), sndSlots[slot].buffer.address, sndSlots[slot].buffer.size};
 
+			*(Uint16 *)(0x25A00108)= 2; // stop
+			sndSlots[slot].playing = 0;
+			Uint32 msk;
+
+			msk = get_imask();
+			set_imask(15);
+			
+//			while(*(Uint16 *)(0x25A0010C)!=0)
+			while(*(Uint16 *)(0x25A00108)!=0)
+			{
+				for(int w=0;w<500;w++)
+				{
+					asm("nop\n"); // waste time
+				}
+			}
+		
+			set_imask(msk);	
+
+/*
 				switch (slot)
 				{
 					case 0: // VGM
@@ -204,7 +223,7 @@ void PLAYVGM_MENU_callback(int item, void *ptr)
 						*(Uint16 *)(0x25A00108)=4;
 						break;						
 				}
-			
+*/			
 				ret = MINCD_load("Select a sound:", &in, &out);
                 if(ret == RETURN_OK) {
                     // file data is in memory
@@ -250,7 +269,22 @@ void PLAYVGM_MENU_callback(int item, void *ptr)
 
         case PLAYVGM_MENU_PLAY:
 			if(sndSlots[slot].playing == 0) {
-			*(Uint16 *)(0x25A00108)=1; // start				
+//			*(Uint16 *)(0x25A00108)=1; // start				
+			
+				switch (slot)
+				{
+					case 0: // VGM
+						*(Uint16 *)(0x25A00108)=4;
+						break;
+					case 1: // MDX
+						*(Uint16 *)(0x25A00108)=4;						
+						break;						
+					case 2: // MOD
+						*(Uint16 *)(0x25A00108)=4;
+						break;						
+				}			
+			
+			
 				sndSlots[slot].playing = 1;
 				sndSlots[slot].frame = 0;
 			}   
@@ -265,7 +299,8 @@ void PLAYVGM_MENU_callback(int item, void *ptr)
 			msk = get_imask();
 			set_imask(15);
 			
-			while(*(Uint16 *)(0x25A0010C)!=0)
+//			while(*(Uint16 *)(0x25A0010C)!=0)
+			while(*(Uint16 *)(0x25A00108)!=0)
 			{
 				for(int w=0;w<500;w++)
 				{

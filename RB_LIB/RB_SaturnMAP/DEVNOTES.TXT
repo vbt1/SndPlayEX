@@ -1,0 +1,113 @@
+RB_SaturnMAP tool by The Rockin'-B
+
+
+Purpose:
+Build custom 3D worlds using modelling tools and SEGA 3DEditor and
+use RB_SaturnMAP to convert one or multiple .MDL files to one
+2D Polygon map plus ground following / collision detection data.
+Supported output formats are .MDL C file(hardcoded sourcecode inclusion)
+or binary file(much smaller, load from CD).
+Runtime collision detection / ground following functions and rendering functions included.
+
+
+
+Status notes:
+Last addition was a correction to the collision data center of side/border collision data.
+This is neccessary since the collision detection / ground following
+is an approximation and doesn't always return the exact/correct face the position is in.
+
+The approximated face <-> face border differs from the real one and it depends on faces.
+The more equally the faces are to each other and the more square their shape is,
+the better is the approximation.
+
+NOTE: since Saturn renders quads and not triangles and
+since the VDP1 doesn't support texture coordinates it likely that the faces look similar
+(to each other and) to a perfect square, since the modeller is forced to this to minimize
+texture distortion.
+
+Okay, now the fact that it's an approximation doesn't matter for a track,
+but it can be noticed for the borders.
+Example: The track faces are big and the neighboring border faces are a lot thinner.
+This results in a border collision too early when the border isn't reached.
+The big track face 'pulls' the track border inside.
+Furthermore (like I noticed in my example track) when ground following is performed,
+it can happen to get under the track this way.
+
+
+There are different ways to work arround this approximation errors.
+You could design the track such that neighboring faces are very similar to each other
+(that's the formula).
+But this could have a negative effect on the visuals and more importandly:
+it could increase rendering time.
+So instead just concentrate on the collision data that's generated and correct
+the side border collision data.
+The correction is done by shifting it's center aways from the neighboring
+ground data untill the approximation meets the exact border.
+NOTE: if the track got too tight corners, it might happen that the border collision data
+is not shifted in empty 3D space, but back on the track resulting in an invisible object
+that collides with the car.
+
+
+Known Bugs:
+Side data correction leads to a malloc error later(on MacOS X).
+Look at the sourcecode: MAP_computeGround()
+It seems that the assignment of the new side center causes this.
+I don't have a clue for the reason, on Dev-Cpp this is most likely not reported.
+
+The fact that some borders can't be corrected(see sourcecode or look at the standard output)
+signals that there is a problem hidden somewhere.
+You can avoid side correction by not setting isBorder = 1
+for any ground search constraint, see sourcecode in RB_MAP_USERDATA.C
+
+NOTE: side correction not yet tested on Saturn runtime
+NOTE: binary track loading not tested on Saturn, but works for all other platforms
+NOTE: pretty printing of .MDL files by using SGL macros not implemented.
+Would only be needed for human readability, the compiler doesn't recognize a difference,
+of course.
+
+
+
+
+From the racing game project about 3D world creation:
+
+About tracks:
+    
+    Tracks in Saturn coordinate system:
+        
+Tracks need to be in the Saturn coordinate system before feeding them to RB_SaturnMAP.
+This means track with is X axis and depth is Z axis. The track height is -Y axis.
+
+Ensure the correct track orientation
+BEFORE APPLYING MATERIAL IN 3DEDITOR!
+Otherwise a lot of work is wasted when you find out that you can't use the track.
+You can't transform the object in 3DEditor, so you have to do it one step before that
+in your favorite 3D modeling program.
+
+I made a little test file named CooSystemTest or something.
+Version 3 seems to be the correct one: cubes in origin,
+cones in X-direction, spheres in Z-direction and objects getting
+smaller in -Y direction.
+
+So ensure that your track is orientated according to CooSystemTest3.DXF.
+
+    Track creation toolchain(howto):
+        
+        1) your favorite 3D modeling tool(blender3d for example)
+           to create and/or convert/export it as DXF
+        2) 3Dto3D.EXE
+           to convert the DXF to DXF with 3DFace entities
+        3) DXF2SG3
+           to convert it for use with 3DEditor.
+           May want/need to enable quad switch,
+           since 3Dto3D possibly converts all quads to triangles
+        4) 3DEditor
+           to apply materials properties like textures, lightning,
+           clipping and z-sort types,.....all this Saturn specific stuff
+           NOTE: before applying much detailed material,
+                 ensure that the track successfully passes the rest of the toolchain
+                 and look if it looks like you wanted on Saturn/Satourne
+                 You may need to correct track size and orientation
+                 before proceeding with detailed material.
+        5) RB_SaturnMAP included in the RB libraries
+           to create 2D polygon map, collision/ground data, binary track data
+

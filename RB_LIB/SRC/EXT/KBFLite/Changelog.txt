@@ -1,0 +1,5 @@
+March 26, 2002: Another patch, KBF_GetMetrics works now
+March 26, 2002: Added a patch from Pedro Medeiros
+                Fixes the mucking I did on the 17th :)
+                Now checks byteorder at compile time (one less IF)  
+March 17, 2002: Added support for using glyphs above 128 

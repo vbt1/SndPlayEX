@@ -1,0 +1,519 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 38;
+	objects = {
+		014CEA520018CE5811CA2923 = {
+			buildRules = (
+			);
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				OPTIMIZATION_CFLAGS = "-O0";
+			};
+			isa = PBXBuildStyle;
+			name = Development;
+		};
+		014CEA530018CE5811CA2923 = {
+			buildRules = (
+			);
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				OPTIMIZATION_CFLAGS = "-O2";
+			};
+			isa = PBXBuildStyle;
+			name = Deployment;
+		};
+//010
+//011
+//012
+//013
+//014
+//030
+//031
+//032
+//033
+//034
+		034768E8FF38A79811DB9C8B = {
+			isa = PBXExecutableFileReference;
+			path = RB_SaturnMAP;
+			refType = 3;
+		};
+//030
+//031
+//032
+//033
+//034
+//080
+//081
+//082
+//083
+//084
+		08FB7793FE84155DC02AAC07 = {
+			buildStyles = (
+				014CEA520018CE5811CA2923,
+				014CEA530018CE5811CA2923,
+			);
+			hasScannedForEncodings = 1;
+			isa = PBXProject;
+			mainGroup = 08FB7794FE84155DC02AAC07;
+			projectDirPath = "";
+			targets = (
+				08FB779FFE84155DC02AAC07,
+				A240000607CFA6E4008725A3,
+			);
+		};
+		08FB7794FE84155DC02AAC07 = {
+			children = (
+				C6A0FF2B0290797F04C91782,
+				1AB674ADFE9D54B511CA2CBB,
+				08FB7795FE84155DC02AAC07,
+			);
+			isa = PBXGroup;
+			name = SGL3DTOOL;
+			refType = 4;
+		};
+		08FB7795FE84155DC02AAC07 = {
+			children = (
+				A27854D808028DE900C5DF0E,
+				A27854D908028DE900C5DF0E,
+				A27854DC08028E7200C5DF0E,
+				A27854DD08028E7200C5DF0E,
+				A27854E008028E8600C5DF0E,
+				A27854E108028E8600C5DF0E,
+				A27854E208028E8600C5DF0E,
+				A27854E608028EA100C5DF0E,
+				A27854E708028EA100C5DF0E,
+				A27854E808028EA100C5DF0E,
+				A27854E908028EA100C5DF0E,
+				A27854EA08028EA100C5DF0E,
+				A27854EB08028EA100C5DF0E,
+				A27854EC08028EA100C5DF0E,
+				A27854ED08028EA100C5DF0E,
+			);
+			isa = PBXGroup;
+			name = Source;
+			path = "";
+			refType = 4;
+		};
+		08FB779FFE84155DC02AAC07 = {
+			buildPhases = (
+				08FB77A0FE84155DC02AAC07,
+				08FB77A1FE84155DC02AAC07,
+				08FB77A3FE84155DC02AAC07,
+				08FB77A5FE84155DC02AAC07,
+				C6A0FF2D029079AD04C91782,
+			);
+			buildSettings = {
+				CC = "/usr/bin/gcc-3.3";
+				CPLUSPLUS = "/usr/bin/g++-3.3";
+				FRAMEWORK_SEARCH_PATHS = "";
+				HEADER_SEARCH_PATHS = "build ../MDL ../../INC";
+				INSTALL_PATH = "$(HOME)/bin";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = RB_SaturnMAP;
+				REZ_EXECUTABLE = YES;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
+			};
+			dependencies = (
+			);
+			isa = PBXToolTarget;
+			name = RB_SaturnMAP;
+			productInstallPath = "$(HOME)/bin";
+			productName = SGL3DTOOL;
+			productReference = 034768E8FF38A79811DB9C8B;
+		};
+		08FB77A0FE84155DC02AAC07 = {
+			buildActionMask = 2147483647;
+			files = (
+				A27854EE08028EA100C5DF0E,
+				A27854EF08028EA100C5DF0E,
+				A27854F008028EA100C5DF0E,
+				A27854F108028EA100C5DF0E,
+				A27854F208028EA100C5DF0E,
+				A27854F308028EA100C5DF0E,
+				A27854F408028EA100C5DF0E,
+				A27854F508028EA100C5DF0E,
+			);
+			isa = PBXHeadersBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		08FB77A1FE84155DC02AAC07 = {
+			buildActionMask = 2147483647;
+			files = (
+				A27854DA08028DE900C5DF0E,
+				A27854DB08028DE900C5DF0E,
+				A27854DE08028E7200C5DF0E,
+				A27854DF08028E7200C5DF0E,
+				A27854E308028E8600C5DF0E,
+				A27854E408028E8600C5DF0E,
+				A27854E508028E8600C5DF0E,
+			);
+			isa = PBXSourcesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		08FB77A3FE84155DC02AAC07 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			isa = PBXFrameworksBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		08FB77A5FE84155DC02AAC07 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			isa = PBXRezBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+//080
+//081
+//082
+//083
+//084
+//1A0
+//1A1
+//1A2
+//1A3
+//1A4
+		1AB674ADFE9D54B511CA2CBB = {
+			children = (
+				034768E8FF38A79811DB9C8B,
+				A240001807CFA6E4008725A3,
+			);
+			isa = PBXGroup;
+			name = Products;
+			refType = 4;
+		};
+//1A0
+//1A1
+//1A2
+//1A3
+//1A4
+//A20
+//A21
+//A22
+//A23
+//A24
+		A240000607CFA6E4008725A3 = {
+			buildPhases = (
+				A240000707CFA6E4008725A3,
+				A240000D07CFA6E4008725A3,
+				A240001407CFA6E4008725A3,
+				A240001507CFA6E4008725A3,
+				A240001607CFA6E4008725A3,
+			);
+			buildSettings = {
+				CC = "/usr/bin/gcc-3.3";
+				CPLUSPLUS = "/usr/bin/g++-3.3";
+				FRAMEWORK_SEARCH_PATHS = "";
+				HEADER_SEARCH_PATHS = "glib-2.6.2/ /Users/thomasfuchs/Desktop/RB/INC";
+				INSTALL_PATH = "$(HOME)/bin";
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = RB_SaturnMAP2;
+				REZ_EXECUTABLE = YES;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
+			};
+			dependencies = (
+			);
+			isa = PBXToolTarget;
+			name = RB_SaturnMAP2;
+			productInstallPath = "$(HOME)/bin";
+			productName = SGL3DTOOL;
+			productReference = A240001807CFA6E4008725A3;
+		};
+		A240000707CFA6E4008725A3 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			isa = PBXHeadersBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A240000D07CFA6E4008725A3 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			isa = PBXSourcesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A240001407CFA6E4008725A3 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			isa = PBXFrameworksBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A240001507CFA6E4008725A3 = {
+			buildActionMask = 2147483647;
+			files = (
+			);
+			isa = PBXRezBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A240001607CFA6E4008725A3 = {
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				A240001707CFA6E4008725A3,
+			);
+			isa = PBXCopyFilesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		A240001707CFA6E4008725A3 = {
+			fileRef = C6A0FF2C0290799A04C91782;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A240001807CFA6E4008725A3 = {
+			isa = PBXExecutableFileReference;
+			path = RB_SaturnMAP2;
+			refType = 3;
+		};
+		A27854D808028DE900C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP_USERDATA.c;
+			path = /Users/thomasfuchs/Desktop/RB/RB_SaturnMAP/RB_MAP_USERDATA.c;
+			refType = 0;
+		};
+		A27854D908028DE900C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_SaturnMAP.c;
+			path = /Users/thomasfuchs/Desktop/RB/RB_SaturnMAP/RB_SaturnMAP.c;
+			refType = 0;
+		};
+		A27854DA08028DE900C5DF0E = {
+			fileRef = A27854D808028DE900C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854DB08028DE900C5DF0E = {
+			fileRef = A27854D908028DE900C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854DC08028E7200C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_POL_write.c;
+			path = /Users/thomasfuchs/Desktop/RB/SRC/POL/RB_POL_write.c;
+			refType = 0;
+		};
+		A27854DD08028E7200C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_POL.c;
+			path = /Users/thomasfuchs/Desktop/RB/SRC/POL/RB_POL.c;
+			refType = 0;
+		};
+		A27854DE08028E7200C5DF0E = {
+			fileRef = A27854DC08028E7200C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854DF08028E7200C5DF0E = {
+			fileRef = A27854DD08028E7200C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854E008028E8600C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP_print.c;
+			path = /Users/thomasfuchs/Desktop/RB/SRC/MAP/RB_MAP_print.c;
+			refType = 0;
+		};
+		A27854E108028E8600C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP_write.c;
+			path = /Users/thomasfuchs/Desktop/RB/SRC/MAP/RB_MAP_write.c;
+			refType = 0;
+		};
+		A27854E208028E8600C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP.c;
+			path = /Users/thomasfuchs/Desktop/RB/SRC/MAP/RB_MAP.c;
+			refType = 0;
+		};
+		A27854E308028E8600C5DF0E = {
+			fileRef = A27854E008028E8600C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854E408028E8600C5DF0E = {
+			fileRef = A27854E108028E8600C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854E508028E8600C5DF0E = {
+			fileRef = A27854E208028E8600C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854E608028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP_def.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_MAP_def.h;
+			refType = 0;
+		};
+		A27854E708028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP_print.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_MAP_print.h;
+			refType = 0;
+		};
+		A27854E808028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP_write.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_MAP_write.h;
+			refType = 0;
+		};
+		A27854E908028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_MAP.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_MAP.h;
+			refType = 0;
+		};
+		A27854EA08028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_POL_def.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_POL_def.h;
+			refType = 0;
+		};
+		A27854EB08028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_POL_write.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_POL_write.h;
+			refType = 0;
+		};
+		A27854EC08028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_POL.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_POL.h;
+			refType = 0;
+		};
+		A27854ED08028EA100C5DF0E = {
+			fileEncoding = 4;
+			isa = PBXFileReference;
+			name = RB_SGL_def.h;
+			path = /Users/thomasfuchs/Desktop/RB/INC/RB_SGL_def.h;
+			refType = 0;
+		};
+		A27854EE08028EA100C5DF0E = {
+			fileRef = A27854E608028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854EF08028EA100C5DF0E = {
+			fileRef = A27854E708028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854F008028EA100C5DF0E = {
+			fileRef = A27854E808028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854F108028EA100C5DF0E = {
+			fileRef = A27854E908028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854F208028EA100C5DF0E = {
+			fileRef = A27854EA08028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854F308028EA100C5DF0E = {
+			fileRef = A27854EB08028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854F408028EA100C5DF0E = {
+			fileRef = A27854EC08028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A27854F508028EA100C5DF0E = {
+			fileRef = A27854ED08028EA100C5DF0E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+//A20
+//A21
+//A22
+//A23
+//A24
+//C60
+//C61
+//C62
+//C63
+//C64
+		C6A0FF2B0290797F04C91782 = {
+			children = (
+				C6A0FF2C0290799A04C91782,
+			);
+			isa = PBXGroup;
+			name = Documentation;
+			refType = 4;
+		};
+		C6A0FF2C0290799A04C91782 = {
+			isa = PBXFileReference;
+			path = SGL3DTOOL.1;
+			refType = 4;
+		};
+		C6A0FF2D029079AD04C91782 = {
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				C6A0FF2E029079C004C91782,
+			);
+			isa = PBXCopyFilesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		C6A0FF2E029079C004C91782 = {
+			fileRef = C6A0FF2C0290799A04C91782;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+	};
+	rootObject = 08FB7793FE84155DC02AAC07;
+}

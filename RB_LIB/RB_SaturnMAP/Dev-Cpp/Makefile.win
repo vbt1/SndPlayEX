@@ -1,0 +1,47 @@
+# Project: RB_SaturnMAP
+# Makefile created by Dev-C++ 4.9.9.0
+
+CPP  = g++.exe -D__DEBUG__
+CC   = gcc.exe -D__DEBUG__
+WINDRES = windres.exe
+RES  = 
+OBJ  = ../../SRC/POL/RB_POL.o ../../SRC/POL/RB_POL_write.o ../../SRC/MAP/RB_MAP.o ../../SRC/MAP/RB_MAP_print.o ../../SRC/MAP/RB_MAP_write.o ../RB_MAP_USERDATA.o ../RB_SaturnMAP.o $(RES)
+LINKOBJ  = ../../SRC/POL/RB_POL.o ../../SRC/POL/RB_POL_write.o ../../SRC/MAP/RB_MAP.o ../../SRC/MAP/RB_MAP_print.o ../../SRC/MAP/RB_MAP_write.o ../RB_MAP_USERDATA.o ../RB_SaturnMAP.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib"  -g3 
+INCS =  -I"C:/Dev-Cpp/include"  -I"D:/dev/SATURN/SGL/PROJECTS/RB/INC"  -I"D:/dev/SATURN/SGL/PROJECTS/RB_SaturnMAP" 
+CXXINCS =  -I"C:/Dev-Cpp/include/c++"  -I"C:/Dev-Cpp/include/c++/mingw32"  -I"C:/Dev-Cpp/include/c++/backward"  -I"C:/Dev-Cpp/include"  -I"D:/dev/SATURN/SGL/PROJECTS/RB/INC"  -I"D:/dev/SATURN/SGL/PROJECTS/RB_SaturnMAP" 
+BIN  = RB_SaturnMAP.exe
+CXXFLAGS = $(CXXINCS)   -g3
+CFLAGS = $(INCS)   -g3
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before RB_SaturnMAP.exe all-after
+
+
+clean: clean-custom
+	rm -f $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o "RB_SaturnMAP.exe" $(LIBS)
+
+../../SRC/POL/RB_POL.o: ../../SRC/POL/RB_POL.c
+	$(CC) -c ../../SRC/POL/RB_POL.c -o ../../SRC/POL/RB_POL.o $(CFLAGS)
+
+../../SRC/POL/RB_POL_write.o: ../../SRC/POL/RB_POL_write.c
+	$(CC) -c ../../SRC/POL/RB_POL_write.c -o ../../SRC/POL/RB_POL_write.o $(CFLAGS)
+
+../../SRC/MAP/RB_MAP.o: ../../SRC/MAP/RB_MAP.c
+	$(CC) -c ../../SRC/MAP/RB_MAP.c -o ../../SRC/MAP/RB_MAP.o $(CFLAGS)
+
+../../SRC/MAP/RB_MAP_print.o: ../../SRC/MAP/RB_MAP_print.c
+	$(CC) -c ../../SRC/MAP/RB_MAP_print.c -o ../../SRC/MAP/RB_MAP_print.o $(CFLAGS)
+
+../../SRC/MAP/RB_MAP_write.o: ../../SRC/MAP/RB_MAP_write.c
+	$(CC) -c ../../SRC/MAP/RB_MAP_write.c -o ../../SRC/MAP/RB_MAP_write.o $(CFLAGS)
+
+../RB_MAP_USERDATA.o: ../RB_MAP_USERDATA.c
+	$(CC) -c ../RB_MAP_USERDATA.c -o ../RB_MAP_USERDATA.o $(CFLAGS)
+
+../RB_SaturnMAP.o: ../RB_SaturnMAP.c
+	$(CC) -c ../RB_SaturnMAP.c -o ../RB_SaturnMAP.o $(CFLAGS)
